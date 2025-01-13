@@ -1,15 +1,19 @@
-on: [push, workflow_dispatch]
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Déclenche uniquement pour des tags au format MAJOR.MINOR.PATCH (ex: v1.0.0)
+  workflow_dispatch: # Permet un déclenchement manuel
 
 env: 
   AZURE_RG_NAME: ${{ vars.PROJECT_NAME }}-rg-${{ vars.AZURE_RESOURCE_IDENTIFIER }}
 
 permissions:
-    id-token: write # Require write permission to Fetch an OIDC token (required for federated credential) and write it, it will be automatically used on actions / cli that need it
-  
+  id-token: write # Nécessaire pour récupérer un jeton OIDC
+
 jobs:
   deploy_infrastructure:
     runs-on: ubuntu-latest
-    environment: production # bind the job to the production environment
+    environment: production # Lier le job à l'environnement "production"
     
     outputs:
       appServiceName: ${{ steps.bicep_deploy.outputs.appServiceName }}
@@ -52,8 +56,8 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Publish the app
-      run: dotnet publish -c Release --property:PublishDir=publish # Publish the app to the publish folder of the API project
-      working-directory: ./backend # specify where to find the solution file
+      run: dotnet publish -c Release --property:PublishDir=publish # Publier l'app dans un dossier
+      working-directory: ./backend # Spécifie l'emplacement du fichier de solution
 
     - name: Login to Azure 
       uses: azure/login@v2
@@ -65,8 +69,8 @@ jobs:
     - name: Deploy backend to App Service
       uses: azure/webapps-deploy@v2
       with: 
-        app-name: ${{ needs.deploy_infrastructure.outputs.appServiceName }} # Access to the previous job output to get the appServiceName deployed with bicep
-        package: ./backend/ParkNDeploy.Api/publish # Path to the previously published app     
+        app-name: ${{ needs.deploy_infrastructure.outputs.appServiceName }} # Utilise l'output du job précédent
+        package: ./backend/ParkNDeploy.Api/publish # Chemin de l'application publiée     
   
   deploy_frontend:
     runs-on: ubuntu-latest
@@ -101,5 +105,3 @@ jobs:
         action: upload
         skip_app_build: true
         skip_api_build: true
-
-    
